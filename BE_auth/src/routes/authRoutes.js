@@ -143,7 +143,27 @@ router.post("/login", async (req, res) => {
     });
   }
 
+  try {
+    await new Promise((resolve, reject) => {
+      req.session.regenerate((err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+  } catch (error) {
+    console.error("[auth] session regenerate failed", error);
+    return res.status(500).json({
+      message: "session error",
+    });
+  }
+
   req.session.userId = user.id;
+  console.log(
+    `[auth] login success userId=${user.id} sessionId=${req.sessionID}`,
+  );
 
   return res.status(200).json({
     message: "login success",
@@ -184,9 +204,28 @@ router.get("/me", requireAuth, (req, res) => {
  *         description: Logout success
  */
 router.post("/logout", (req, res) => {
-  req.session.destroy(() => {
+  const sessionId = req.sessionID;
+  if (!req.session) {
     res.clearCookie("sid");
-    res.status(200).json({
+    return res.status(200).json({
+      message: "logout success",
+    });
+  }
+
+  req.session.destroy((err) => {
+    res.clearCookie("sid");
+
+    if (err) {
+      console.error("[auth] logout session destroy failed", err, {
+        sessionId,
+      });
+      return res.status(500).json({
+        message: "logout error",
+      });
+    }
+
+    console.log(`[auth] logout success sessionId=${sessionId}`);
+    return res.status(200).json({
       message: "logout success",
     });
   });
