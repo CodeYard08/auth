@@ -1,13 +1,15 @@
-type InputProps = {
-  placeholder?: string;
+import type React from "react";
+
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   type?: "text" | "password" | "email";
 };
 
-export const Input = ({ placeholder, type = "text" }: InputProps) => {
+export const Input = ({ placeholder, type = "text", ...props }: InputProps) => {
   return (
     <input
       type={type}
       placeholder={placeholder}
+      {...props}
       style={{
         width: "100%",
         padding: "10px 8px",

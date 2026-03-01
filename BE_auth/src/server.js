@@ -11,13 +11,35 @@ dotenv.config();
 const app = express();
 
 const PORT = Number(process.env.PORT ?? 5123);
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
 const SESSION_SECRET = process.env.SESSION_SECRET ?? "dev-only-secret";
 const isProduction = process.env.NODE_ENV === "production";
+const FRONTEND_ORIGINS =
+  process.env.FRONTEND_ORIGIN?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? [];
+const defaultDevOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5174",
+];
+const allowedOrigins =
+  FRONTEND_ORIGINS.length > 0 ? FRONTEND_ORIGINS : defaultDevOrigins;
 
 app.use(
   cors({
-    origin: FRONTEND_ORIGIN,
+    origin: (origin, callback) => {
+      // Allow non-browser requests (same-origin/server-to-server).
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Not allowed by CORS: ${origin}`));
+    },
     credentials: true,
   }),
 );
